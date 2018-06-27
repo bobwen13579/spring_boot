@@ -1,55 +1,38 @@
-# 项目描述
+package com.test.demo.controller;
 
-### 文档说明
+import java.security.SecureRandom;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.DESKeySpec;
+import javax.servlet.http.HttpServletRequest;
 
-- ### spring_login:     登陆注册程序
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
-- ### springboot_practice：刚学习练习的demo
+import com.test.demo.dao.UserDao;
+import com.test.demo.enti.User;
 
-- ### SpringBoot学习笔记:   学习SpringBoot的笔记
+@Controller
+public class UserController {
 
-- ### sucess_image：    运行成功的截图
+    @Autowired
 
-### 开发工具
+    //声明userDao接口，这里不清纯为什么报错"Could not autowire. No beans of 'UserDao' type found"
+    private UserDao userDao;
 
-- IntelliJ *IDEA* 2017
-- jdk1.8
-- SpringBoot 1.5.9RELEASE
-- mysql8.0.1
-- navicat
+    @RequestMapping("/regist")
+    public String regist() {
+        return "regist";
+    }
 
-### 知识储备
+    @RequestMapping("/login")
+    public String login() {
+        return "login";
+    }
 
-- java基础知识
-  - 类和接口
-  - Des加密解密算法
-  - mysql
-- spring boot
-  - pom.xml 依赖
-  - Spring Initializer快速创建项目
-  - 配置文件（application.properties，application.yml 语法注入等）
-  - 静态资源文件映射规则
-  - thymeleaf使用和语法规则
-  - 连接mysql数据库
-  - 整合Mybatis
 
-### 项目分析
-
-#### dao包：
-
- 声明了UserDao接口：定义了对数据库插入和查询的操作
-
-#### enti包：
-
-封装了User类：用户的用户名和密码
-
-#### controller：
-
-UserController:实现UserDao接口，通过thymeleaf控制不同页面的跳转，实现字符串加密和解密的函数，将页面捕获的密码加密存到数据库中，数据库查询的密码解密后再与登陆的支付进行匹配。
-
-####  Des加密解密实现
-
-```java
     private static final byte[] DES_KEY = { 21, 1, -110, 82, -32, -85, -128, -65 };
     @SuppressWarnings("restriction")
     public static String encryptBasedDes(String data) {
@@ -93,42 +76,24 @@ UserController:实现UserDao接口，通过thymeleaf控制不同页面的跳转�
         }
         return decryptedData;
     }
-```
 
+    @RequestMapping("/success")
+    public String success(HttpServletRequest request) {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        String s1 = encryptBasedDes(password);
+        userDao.save(username, s1);
+        return "success";
+    }
 
-
-#### 页面
-
-主要用的是表单操作，没有进行美化
-
-#### 配置文件
-
-```xml
-#配置文件，主要是连接mysql数据库
-spring.datasource.url=jdbc:mysql://localhost:3306/db_user
-spring.datasource.username=root
-spring.datasource.password=13579
-spring.datasource.driver-class-name=com.mysql.jdbc.Driver
-```
-
-pom.xml主要配置项
-
-`切记：导入thymeleaf一定要科学上网，不然会包导入失败而报错`
-
-```xml
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		</dependency>
-		<dependency>
-			<groupId>commons-dbcp</groupId>
-			<artifactId>commons-dbcp</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-		</dependency>
-```
-
+    @RequestMapping("/Loginsuccess")
+    public String successLogin(HttpServletRequest request) {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        User user = userDao.findByUname(username);
+        if(decryptBasedDes(user.getPassword()).equals(password)) {
+            return "successLogin";
+        }
+        return "failure";
+    }
+}
